@@ -1,0 +1,129 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Fields: uid, email, displayName, role, buildingIds
+//
+// Collection: buildings
+// Fields: name, type, address, ownerId, managerIds, unitCount, occupancyRate
+//
+// Collection: tenants
+// Fields: name, companyName, buildingId, unitId, phone, email, leaseStart, leaseEnd, rentAmount, paymentStatus
+//
+// Collection: maintenance_tickets
+// Fields: buildingId, unitId, category, description, priority, reportedBy, assignedTo, status, createdAt, dueDate, costEstimate, isRepeat
+//
+// Collection: assets
+// Fields: buildingId, name, type, location, lastServiceDate, nextServiceDate, condition, vendorId
+//
+// Collection: incidents
+// Fields: buildingId, type, severity, description, reportedAt, reportedBy, status, escalationLevel
+//
+// Collection: rent_records
+// Fields: tenantId, buildingId, dueDate, amountDue, amountPaid, status, overdueDays
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner' ||
+         (request.auth.token.email == "leul2249@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isManagerOfBuilding(buildingId) {
+      return isAuthenticated() && (
+        buildingId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.buildingIds ||
+        isAdmin()
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['owner', 'manager', 'staff', 'tenant', 'vendor'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (request.resource.data.role != 'owner' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+    }
+
+    match /buildings/{buildingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || hasRole('manager');
+      allow delete: if isAdmin();
+    }
+
+    match /maintenance_tickets/{ticketId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /assets/{assetId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || hasRole('manager');
+      allow delete: if isAdmin();
+    }
+
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() || hasRole('manager');
+      allow delete: if isAdmin();
+    }
+
+    match /rent_records/{recordId} {
+      allow read: if isAdmin() || hasRole('manager');
+      allow create, update: if isAdmin() || hasRole('manager');
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

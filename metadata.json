@@ -1,0 +1,7 @@
+{
+  "name": "TowerPilot Ethiopia",
+  "description": "AI-powered building operations management platform for large building owners and managers in Ethiopia.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

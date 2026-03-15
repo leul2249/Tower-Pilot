@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "manager", "staff", "tenant", "vendor"] },
+        "buildingIds": { "type": "array", "items": { "type": "string" }, "description": "Buildings this user is associated with" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Building": {
+      "title": "Building",
+      "description": "Building information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["office", "mixed-use", "apartment", "commercial"] },
+        "address": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "managerIds": { "type": "array", "items": { "type": "string" } },
+        "unitCount": { "type": "integer" },
+        "occupancyRate": { "type": "number" }
+      },
+      "required": ["name", "type", "ownerId"]
+    },
+    "Tenant": {
+      "title": "Tenant",
+      "description": "Tenant details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "companyName": { "type": "string" },
+        "buildingId": { "type": "string" },
+        "unitId": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "leaseStart": { "type": "string", "format": "date" },
+        "leaseEnd": { "type": "string", "format": "date" },
+        "rentAmount": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["paid", "unpaid", "partial"] }
+      },
+      "required": ["name", "buildingId", "unitId", "rentAmount"]
+    },
+    "MaintenanceTicket": {
+      "title": "Maintenance Ticket",
+      "description": "Maintenance request details",
+      "type": "object",
+      "properties": {
+        "buildingId": { "type": "string" },
+        "unitId": { "type": "string" },
+        "category": { "type": "string", "enum": ["plumbing", "electrical", "generator", "elevator", "hvac", "water", "cleaning", "security", "other"] },
+        "description": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+        "reportedBy": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "assigned", "in-progress", "waiting-parts", "resolved", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "costEstimate": { "type": "number" },
+        "isRepeat": { "type": "boolean" }
+      },
+      "required": ["buildingId", "category", "description", "priority", "status", "createdAt"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "Building asset details",
+      "type": "object",
+      "properties": {
+        "buildingId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "location": { "type": "string" },
+        "lastServiceDate": { "type": "string", "format": "date-time" },
+        "nextServiceDate": { "type": "string", "format": "date-time" },
+        "condition": { "type": "string", "enum": ["excellent", "good", "fair", "poor"] },
+        "vendorId": { "type": "string" }
+      },
+      "required": ["buildingId", "name", "type"]
+    },
+    "Incident": {
+      "title": "Incident",
+      "description": "Operational incident details",
+      "type": "object",
+      "properties": {
+        "buildingId": { "type": "string" },
+        "type": { "type": "string", "enum": ["security", "water-outage", "generator-outage", "fire-alarm", "unauthorized-access", "parking", "misconduct", "dispute", "emergency"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "description": { "type": "string" },
+        "reportedAt": { "type": "string", "format": "date-time" },
+        "reportedBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "investigating", "resolved", "closed"] },
+        "escalationLevel": { "type": "integer" }
+      },
+      "required": ["buildingId", "type", "severity", "description", "reportedAt", "status"]
+    },
+    "RentRecord": {
+      "title": "Rent Record",
+      "description": "Rent payment record",
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string" },
+        "buildingId": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "amountDue": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "unpaid", "partial"] },
+        "overdueDays": { "type": "integer" }
+      },
+      "required": ["tenantId", "buildingId", "dueDate", "amountDue", "status"]
+    }
+  },
+  "firestore": {
+    "users": { "schema": "User", "description": "User profiles" },
+    "buildings": { "schema": "Building", "description": "Building records" },
+    "tenants": { "schema": "Tenant", "description": "Tenant records" },
+    "maintenance_tickets": { "schema": "MaintenanceTicket", "description": "Maintenance requests" },
+    "assets": { "schema": "Asset", "description": "Building assets" },
+    "incidents": { "schema": "Incident", "description": "Operational incidents" },
+    "rent_records": { "schema": "RentRecord", "description": "Rent payment history" }
+  }
+}
